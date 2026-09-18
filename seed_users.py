@@ -1,7 +1,10 @@
 from sqlalchemy.orm import Session
-from database import SessionLocal
+
+from database import SessionLocal, engine, Base
 from user_models import User
 from pwdlib import PasswordHash
+
+Base.metadata.create_all(bind=engine)
 
 password_hash = PasswordHash.recommended()
 
