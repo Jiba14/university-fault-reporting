@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fault Management Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .card {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f2f5;
+        }
+
+        select {
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .refresh {
+            margin-bottom: 15px;
+            padding: 10px 18px;
+            background: #2563eb;
+            color: white;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            display: none;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Fault Management Dashboard</h1>
+
+    <div class="summary">
+
+        <div class="card">
+            <h2 id="total">0</h2>
+            <p>Total Faults</p>
+        </div>
+
+        <div class="card">
+            <h2 id="open">0</h2>
+            <p>Open</p>
+        </div>
+
+        <div class="card">
+            <h2 id="progress">0</h2>
+            <p>In Progress</p>
+        </div>
+
+        <div class="card">
+            <h2 id="resolved">0</h2>
+            <p>Resolved</p>
+        </div>
+
+    </div>
+
+    <button class="refresh" onclick="loadFaults()">
+        Refresh Faults
+    </button>
+
+    <div id="message" class="message"></div>
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Equipment</th>
+                    <th>Location</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>Priority</th>
+                    <th>Reporter</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="faultTable">
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+async function loadFaults() {
+
+    const response = await fetch("/faults");
+    const data = await response.json();
+
+    const table = document.getElementById("faultTable");
+
+    table.innerHTML = "";
+
+    let open = 0;
+    let progress = 0;
+    let resolved = 0;
+
+    data.faults.forEach(fault => {
+
+        if (fault.status === "open") {
+            open++;
+        }
+
+        if (fault.status === "in_progress") {
+            progress++;
+        }
+
+        if (fault.status === "resolved") {
+            resolved++;
+        }
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${fault.fault_id}</td>
+            <td>${fault.equipment_id}</td>
+            <td>${fault.location}</td>
+            <td>${fault.description}</td>
+            <td>${fault.severity}</td>
+            <td>${fault.priority}</td>
+            <td>${fault.reporter_id}</td>
+
+            <td>
+                <select id="status-${fault.fault_id}">
+                    <option value="open" ${fault.status === "open" ? "selected" : ""}>
+                        Open
+                    </option>
+
+                    <option value="in_progress" ${fault.status === "in_progress" ? "selected" : ""}>
+                        In Progress
+                    </option>
+
+                    <option value="resolved" ${fault.status === "resolved" ? "selected" : ""}>
+                        Resolved
+                    </option>
+                </select>
+            </td>
+
+            <td>
+                <button onclick="updateStatus(${fault.fault_id})">
+                    Update
+                </button>
+            </td>
+        `;
+
+        table.appendChild(row);
+    });
+
+    document.getElementById("total").textContent = data.count;
+    document.getElementById("open").textContent = open;
+    document.getElementById("progress").textContent = progress;
+    document.getElementById("resolved").textContent = resolved;
+}
+
+
+async function updateStatus(faultId) {
+
+    const status =
+        document.getElementById(`status-${faultId}`).value;
+
+    const response = await fetch(
+        `/faults/${faultId}/status?status=${status}`,
+        {
+            method: "PUT"
+        }
+    );
+
+    const data = await response.json();
+
+    const message = document.getElementById("message");
+
+    if (response.ok && data.status === "success") {
+
+        message.textContent =
+            `Fault ${faultId} updated to ${status}.`;
+
+        message.style.display = "block";
+
+        loadFaults();
+
+    } else {
+
+        message.textContent =
+            "Failed to update fault.";
+
+        message.style.display = "block";
+    }
+}
+
+
+loadFaults();
+
+</script>
+
+</body>
+</html>

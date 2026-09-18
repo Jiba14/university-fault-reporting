@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Fault Reporting System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            display: none;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>University Fault Reporting System</h1>
+
+    <p class="subtitle">
+        Report faulty university equipment
+    </p>
+
+    <form id="faultForm">
+
+        <label for="equipment_id">Equipment ID</label>
+        <input
+            type="text"
+            id="equipment_id"
+            placeholder="Example: PC-004"
+            required
+        >
+
+        <label for="location">Location</label>
+        <input
+            type="text"
+            id="location"
+            placeholder="Example: Computer Lab 1"
+            required
+        >
+
+        <label for="description">Fault Description</label>
+        <textarea
+            id="description"
+            placeholder="Describe the problem..."
+            required
+        ></textarea>
+
+        <label for="severity">Severity</label>
+        <select id="severity" required>
+            <option value="">Select severity</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+
+        <button type="submit">
+            Submit Fault Report
+        </button>
+
+    </form>
+
+    <div id="message"></div>
+
+</div>
+
+<script>
+
+document.getElementById("faultForm").addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const message = document.getElementById("message");
+
+    const faultData = {
+        equipment_id: document.getElementById("equipment_id").value,
+        location: document.getElementById("location").value,
+        description: document.getElementById("description").value,
+        severity: document.getElementById("severity").value
+    };
+
+    try {
+
+        const response = await fetch("/faults", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(faultData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+            message.className = "success";
+            message.style.display = "block";
+
+            message.innerHTML =
+                "Fault submitted successfully. " +
+                "Fault ID: " + data.fault_id +
+                " | Priority: " + data.priority;
+
+            document.getElementById("faultForm").reset();
+
+        } else {
+
+            message.className = "error";
+            message.style.display = "block";
+
+            message.innerHTML =
+                "Error submitting fault report.";
+
+        }
+
+    } catch (error) {
+
+        message.className = "error";
+        message.style.display = "block";
+
+        message.innerHTML =
+            "Could not connect to the fault reporting server.";
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
